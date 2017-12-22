@@ -1,0 +1,24 @@
+{
+    "name": "cmd-ctrl",
+    "version": "0.0.1",
+    "author": "gadmz@icloud.com",
+    "description": "CQRS Style Command Processor",
+    "license": "Apache 2.0",
+    "engines": {
+        "node": ">=8.6"
+    },
+    "scripts": {
+        "test": "mocha --recursive"
+    },
+    "dependencies": {
+        "underscore": "~1.8.3",
+        "require-dir": "0.3.2",
+        "sexylog": "0.0.3"
+    },
+    "devDependencies": {
+        "express": "~4.14.0",
+        "restify": "^6.3.4",
+        "chai": "~3.5.0",
+        "mocha": "~3.1.0"
+    }
+}

@@ -3,31 +3,69 @@ var assert = require('assert');
 
 describe('test command processor', function () {
 
-        const repository = createRepository();
-  
-        const userBob = {id: 1, type: 'user', name: 'bob', email: 'bob@gmail.com'};
-        const userJim = {id: 2, type: 'user', name: 'jim', email: 'jim@gmail.com'};
-        const userEve = {id: 3, type: 'user', name: 'eve', email: 'eve@gmail.com'};
+    const repository = createRepository();
 
-        before(function() {
-            // runs before all tests in this block
+    const userBob = {id: 1, type: 'user', name: 'bob', email: 'bob@gmail.com'};
+    const userJim = {id: 2, type: 'user', name: 'jim', email: 'jim@gmail.com'};
+    const userEve = {id: 3, type: 'user', name: 'eve', email: 'eve@gmail.com'};
 
-            repository.save(userBob);
-            repository.save(userJim);
-            repository.save(userEve);
-        });
-
+    before(function() {
+        // runs before all tests in this block
+        repository.save(userBob);
+        repository.save(userJim);
+        repository.save(userEve);
+    });
 
 
-        it('test name change command', async function () {
-         
-            const command = {name: 'changeUserName', id: 1, type: 'user', data: {name: 'bobby', email: 'bobby@gmail.com'}};
+
+    it('test name change command', async function () {
+        
+        const command = {name: 'changeUserName', id: 1, type: 'user', data: {name: 'bobby', email: 'bobby@gmail.com'}};
+        commands = {};
+        const commandHandler = {
+            execute: function(command, entity) {
+                entity.name =  command.data.name;
+                entity.email = command.data.email;
+                return entity;
+            }
+        }
+        commands[command.name] = commandHandler;
+        const commandProcessor = new CommandProcessor(repository, createCommandHandlerFactory(commands));
+
+        const result = await commandProcessor.process(command);
+
+        // assert command processor returned updated object in result
+        assert.equal(true, result.ok);
+        assert.equal(userBob.id, result.entity.id);
+        assert.equal(command.data.name, result.entity.name);
+        assert.equal(command.data.email, result.entity.email);
+
+        // assert command processor didn't mutate original object
+        assert.equal('bob', userBob.name);
+        assert.equal('bob@gmail.com', userBob.email);
+
+        // assert repository has latest entity from command mutation
+        const updatedUserBob = repository.getById(command.id, command.type);
+        assert.equal('bobby', updatedUserBob.name);
+        assert.equal('bobby@gmail.com', updatedUserBob.email);
+
+    });
+
+
+
+    it('test new user command', async function () {
+        
+            const command = {name: 'createUser', type: 'user', data: {id: 4, name: 'sally', email: 'sally@gmail.com'}};
             commands = {};
             const commandHandler = {
                 execute: function(command, entity) {
-                    entity.name =  command.data.name;
-                    entity.email = command.data.email;
-                    return entity;
+                    // entity will be undefined
+                    const newUser = {};
+                    newUser.id = command.data.id;
+                    newUser.name =  command.data.name;
+                    newUser.email = command.data.email;
+                    newUser.type = command.type;
+                    return newUser;
                 }
             }
             commands[command.name] = commandHandler;
@@ -37,7 +75,7 @@ describe('test command processor', function () {
 
             // assert command processor returned updated object in result
             assert.equal(true, result.ok);
-            assert.equal(userBob.id, result.entity.id);
+            assert.equal(command.data.id, result.entity.id);
             assert.equal(command.data.name, result.entity.name);
             assert.equal(command.data.email, result.entity.email);
 
@@ -46,51 +84,42 @@ describe('test command processor', function () {
             assert.equal('bob@gmail.com', userBob.email);
 
             // assert repository has latest entity from command mutation
-            const updatedUserBob = repository.getById(command.id, command.type);
-            assert.equal('bobby', updatedUserBob.name);
-            assert.equal('bobby@gmail.com', updatedUserBob.email);
+            const createdUserSally = repository.getById(command.data.id, command.type);
+            assert.equal('sally', createdUserSally.name);
+            assert.equal('sally@gmail.com', createdUserSally.email);
 
         });
 
 
-        it('test new user command', async function () {
-            
-               const command = {name: 'createUser', type: 'user', data: {id: 4, name: 'sally', email: 'sally@gmail.com'}};
-               commands = {};
-               const commandHandler = {
-                   execute: function(command, entity) {
-                       // entity will be undefined
-                       const newUser = {};
-                       newUser.id = command.data.id;
-                       newUser.name =  command.data.name;
-                       newUser.email = command.data.email;
-                       newUser.type = command.type;
-                       return newUser;
-                   }
-               }
-               commands[command.name] = commandHandler;
-               const commandProcessor = new CommandProcessor(repository, createCommandHandlerFactory(commands));
-   
-               const result = await commandProcessor.process(command);
 
-               // assert command processor returned updated object in result
-               assert.equal(true, result.ok);
-               assert.equal(command.data.id, result.entity.id);
-               assert.equal(command.data.name, result.entity.name);
-               assert.equal(command.data.email, result.entity.email);
-   
-               // assert command processor didn't mutate original object
-               assert.equal('bob', userBob.name);
-               assert.equal('bob@gmail.com', userBob.email);
-   
-               // assert repository has latest entity from command mutation
-               const createdUserSally = repository.getById(command.data.id, command.type);
-               assert.equal('sally', createdUserSally.name);
-               assert.equal('sally@gmail.com', createdUserSally.email);
-   
-           });
-   
+        it('test delete user command', async function () {
+            const command = {name: 'deleteUser', id: 1, type: 'user', data: {}};
+            commands = {};
+            const commandHandler = {
+                execute: function(command, entity) {
+                    // return undefined entity to delete
+                    return;
+                }
+            }
+            commands[command.name] = commandHandler;
+            const commandProcessor = new CommandProcessor(repository, createCommandHandlerFactory(commands));
 
+            const result = await commandProcessor.process(command);
+
+            // assert command processor returned updated object in result
+            assert.equal(true, result.ok);
+            assert.equal(undefined, result.entity);
+
+            // assert command processor didn't mutate original object
+            assert.equal('bob', userBob.name);
+            assert.equal('bob@gmail.com', userBob.email);
+
+            // assert repository has latest entity from command mutation
+            const deletedUser = repository.getById(command.data.id, command.type);
+            assert.equal(undefined, deletedUser);
+
+        });
+   
 
 
         it('command processor fails with missing command handler', async function () {

@@ -1,7 +1,7 @@
 {
     "name": "cmd-ctrl",
-    "version": "0.0.1",
-    "author": "gadmz@icloud.com",
+    "version": "0.1.0",
+    "author": "Gawain Hammond <gadmz@icloud.com>",
     "description": "CQRS Style Command Processor",
     "license": "Apache 2.0",
     "engines": {

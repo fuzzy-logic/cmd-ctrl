@@ -1,9 +1,14 @@
 const CommandProcessor = require('../lib/CommandProcessor.js');
-var assert = require('assert');
+const assert = require('assert');
 
+
+/**
+ * Test for CMD+CTRL core CommandProcessor object to snure correct processing of commands and entity state
+ * 
+ */
 describe('test command processor', function () {
 
-    const repository = createRepository();
+    const repository = require('../index.js').getInMemRepository(); // get the dev/test in mem repository implementation from cmdCtrl
 
     const userBob = {id: 1, type: 'user', name: 'bob', email: 'bob@gmail.com'};
     const userJim = {id: 2, type: 'user', name: 'jim', email: 'jim@gmail.com'};
@@ -30,7 +35,7 @@ describe('test command processor', function () {
             }
         }
         commands[command.name] = commandHandler;
-        const commandProcessor = new CommandProcessor(repository, createCommandHandlerFactory(commands));
+        const commandProcessor = new CommandProcessor(repository, inMemCommandHandlerFactory(commands));
 
         const result = await commandProcessor.process(command);
 
@@ -69,7 +74,7 @@ describe('test command processor', function () {
                 }
             }
             commands[command.name] = commandHandler;
-            const commandProcessor = new CommandProcessor(repository, createCommandHandlerFactory(commands));
+            const commandProcessor = new CommandProcessor(repository, inMemCommandHandlerFactory(commands));
 
             const result = await commandProcessor.process(command);
 
@@ -102,7 +107,7 @@ describe('test command processor', function () {
                 }
             }
             commands[command.name] = commandHandler;
-            const commandProcessor = new CommandProcessor(repository, createCommandHandlerFactory(commands));
+            const commandProcessor = new CommandProcessor(repository, inMemCommandHandlerFactory(commands));
 
             const result = await commandProcessor.process(command);
 
@@ -122,10 +127,10 @@ describe('test command processor', function () {
    
 
 
-        it('command processor fails with missing command handler', async function () {
+        it('test command processor fails with missing command handler', async function () {
             const command = {name: 'createUser', type: 'user', data: {name: 'sally', email: 'sally@gmail.com'}}
             commands = {};
-            const commandProcessor = new CommandProcessor(repository, createCommandHandlerFactory(commands));
+            const commandProcessor = new CommandProcessor(repository, inMemCommandHandlerFactory(commands));
 
             const result = await commandProcessor.process(command);
 
@@ -135,12 +140,12 @@ describe('test command processor', function () {
 
 
 
-        it('command processor fails with invalid command handler', async function () {
+        it('test command processor fails with invalid command handler', async function () {
             const command = {name: 'createUser', type: 'user', data: {name: 'sally', email: 'sally@gmail.com'}}
             const commandHandler = {  }
             commands = {};
             commands[command.name] = commandHandler;
-            const commandProcessor = new CommandProcessor(repository, createCommandHandlerFactory(commands));
+            const commandProcessor = new CommandProcessor(repository, inMemCommandHandlerFactory(commands));
 
             const result = await commandProcessor.process(command);
 
@@ -148,7 +153,34 @@ describe('test command processor', function () {
             assert.equal('Error: invalid command handler no execute() function: {}', result.err);
         });
 
+
+        it('test command processor fails deleting non-exsiting entity', async function () {
+            const command = {name: 'deleteUser', id: 5, type: 'user', data: {}}; //no existing entity with id=5
+            commands = {};
+            const commandHandler = {
+                execute: function(command, entity) {
+                    // return undefined entity to delete
+                    return;
+                }
+            }
+            commands[command.name] = commandHandler;
+            const commandProcessor = new CommandProcessor(repository, inMemCommandHandlerFactory(commands));
+
+            const result = await commandProcessor.process(command);
+
+            // assert command processor failed as expected
+            assert.equal(false, result.ok);
+            assert.equal('Error: unable to delete invalid existing entity: undefined', result.err);
+
+        });
+
 });
+
+
+
+
+
+
 
 
 /**
@@ -157,31 +189,10 @@ describe('test command processor', function () {
  * 
  * @param {*} commands Liternal object of name -> CommandHandler mappings
  */
-function createCommandHandlerFactory(commands) {
+function inMemCommandHandlerFactory(commands) {
     return {
         getCommandHandler: function(command) {
             return commands[command];
         }
     }
 }
-
-/**
- * Sample in-memeory repository for dependency injection to command processor
- */
-function createRepository() {
-    var repo = {};
-    return {
-            getById: function(id, type) {
-                return repo[type + id];
-            },
-            save: function(entity) {
-                repo[entity.type + entity.id] = entity;  
-                return true;
-            },
-            delete(entity) {
-                repo[entity.type + entity.id] = undefined;  
-                return true;
-            }
-        };
-
-    }; 

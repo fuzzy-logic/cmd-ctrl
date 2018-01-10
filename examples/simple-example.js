@@ -1,25 +1,3 @@
-# cmd-ctrl
-
-Node/JS CQRS Style Command processor and state manager.
-
-CMD+CTRL helps you manage the state of entities in your domain using a CQRS approach where
-Commands (mutating entities) are separated from Queries.
-
-By using Commands and associating htem with CommandHandlers your domain entities will always be 
-in a well known state as client will not be able to arbitrarily muttate state.
-
-
-# Depedencies 
-
-install npm dependency
-
-```
-  npm install cmd-ctrl
-```
-
-### Getting started using cmd+ctrl with simple in-mem commands
-
-```
 
 ///// STEP 1: STEUP COMMAND PROCESSOR
 
@@ -69,16 +47,3 @@ console.log(result1);
 
 const result2 =  commandProcessor.process(updateUserCommand);// this will return user with profile update to bobby
 console.log(result2);
-
-```
-
-
-
-
-# Examples
-
-see /examples directory for a rest api that uses cmd+ctrl
-
-# Run Tests
-
-  mocha --recursive

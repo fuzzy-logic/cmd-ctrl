@@ -32,7 +32,10 @@ describe('test command processor', function () {
                 entity.name =  command.data.name;
                 entity.email = command.data.email;
                 return entity;
-            }
+            },
+            validateCommand: function() {},
+            preValidateEntity: function() {},
+            postValidateEntity: function() {}
         }
         commands[command.name] = commandHandler;
         const commandProcessor = new CommandProcessor(repository, inMemCommandHandlerFactory(commands));
@@ -71,7 +74,10 @@ describe('test command processor', function () {
                     newUser.email = command.data.email;
                     newUser.type = command.type;
                     return newUser;
-                }
+                },
+                validateCommand: function() {},
+                preValidateEntity: function() {},
+                postValidateEntity: function() {}
             }
             commands[command.name] = commandHandler;
             const commandProcessor = new CommandProcessor(repository, inMemCommandHandlerFactory(commands));
@@ -104,7 +110,10 @@ describe('test command processor', function () {
                 execute: function(command, entity) {
                     // return undefined entity to delete
                     return;
-                }
+                },
+                validateCommand: function() {},
+                preValidateEntity: function() {},
+                postValidateEntity: function() {}
             }
             commands[command.name] = commandHandler;
             const commandProcessor = new CommandProcessor(repository, inMemCommandHandlerFactory(commands));
@@ -135,7 +144,7 @@ describe('test command processor', function () {
             const result = await commandProcessor.process(command);
 
             assert.equal(false, result.ok);
-            assert.equal('Error: command handler not found', result.err);
+            assert.equal('Error: command handler for name "createUser" not found', result.err);
         });
 
 
@@ -150,8 +159,9 @@ describe('test command processor', function () {
             const result = await commandProcessor.process(command);
 
             assert.equal(false, result.ok);
-            assert.equal('Error: invalid command handler no execute() function: {}', result.err);
+
         });
+
 
 
         it('test command processor fails deleting non-exsiting entity', async function () {
@@ -161,7 +171,10 @@ describe('test command processor', function () {
                 execute: function(command, entity) {
                     // return undefined entity to delete
                     return;
-                }
+                },
+                validateCommand: function() {},
+                preValidateEntity: function() {},
+                postValidateEntity: function() {}
             }
             commands[command.name] = commandHandler;
             const commandProcessor = new CommandProcessor(repository, inMemCommandHandlerFactory(commands));
@@ -170,7 +183,7 @@ describe('test command processor', function () {
 
             // assert command processor failed as expected
             assert.equal(false, result.ok);
-            assert.equal('Error: unable to delete invalid existing entity: undefined', result.err);
+            assert.equal('Error: entity not found for id=5', result.err);
 
         });
 

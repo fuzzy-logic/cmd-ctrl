@@ -4,9 +4,9 @@ const cmdCtrl = require('../index.js');
 
 //Commands and entities to mutate
 
-const newUserCmd = {name: 'CreateUser', type: 'user', data: {id: 101, name: 'gawain', email: 'gawain@gmail.com'}};
-const updateUserProfileCmd = {name: 'UpdateUserProfile', id: 101, type: 'user', data: {name: 'gavin', email: 'gavin@gmail.com'}};
-const deleteUserCmd = {name: 'DeleteUser', id: 101, type: 'user'};
+const newUserCmd = {name: 'CreateUser', type: 'user', data: {name: 'gawain', email: 'gawain@gmail.com'}};
+const updateUserProfileCmd = {name: 'UpdateUserProfile', id: undefined, type: 'user', data: {name: 'gavin', email: 'gavin@gmail.com'}};
+const deleteUserCmd = {name: 'DeleteUser', id: undefined, type: 'user'};
 const userBob = {id: 1, type: 'user', name: 'bob', email: 'bob@gmail.com'};
 const userJim = {id: 2, type: 'user', name: 'jim', email: 'jim@gmail.com'};
 const userEve = {id: 3, type: 'user', name: 'eve', email: 'eve@gmail.com'};
@@ -17,14 +17,8 @@ const userEve = {id: 3, type: 'user', name: 'eve', email: 'eve@gmail.com'};
  */
 describe('test command processor', function () {
 
-
-
-
     const customInMemRepo = customInMemRepository();
     const customInMemCommandHandlerFactory = inMemCommandHandlerFactory(testCommandHandlers());
-
-
-
 
     before(function() {
         // runs before all tests in this block
@@ -33,38 +27,49 @@ describe('test command processor', function () {
         customInMemRepo.save(userEve);
     });
         
-    it('test default in-mem+dir cmd-ctrl implementation', async function () {
+    /**
+     * execute series of commands representing typical lifecycle of an entity:
+     * 1.) create user
+     * 2.) update user profile
+     * 3.) delete user
+     *  
+     */
+    it('user lifecycle with default in-mem+dir cmd-ctrl implementation', async function () {
 
         var commandProcessor = cmdCtrl.init(__dirname + '/commands');
         var repository = cmdCtrl.getInMemRepository();
-        assert.ok(commandProcessor);
+    
 
+        ///// STEP 1: Create new user ///////////////////////////////////////
         const newUserResult = await commandProcessor.process(newUserCmd);
-        // assert repository has  entity from newUserCmd command 
         assert.equal(true, newUserResult.ok);
-        //console.dir(newUserResult);
-        const repoUserGawain = repository.getById(newUserCmd.data.id, newUserCmd.type);
+        // assert command state changes
+        const repoUserGawain = repository.getById(newUserResult.entity.id, newUserCmd.type);
         assert.equal('gawain', repoUserGawain.name);
         assert.equal('gawain@gmail.com', repoUserGawain.email);
 
+
+        ///// STEP 2: Update user profile details /////////////////////////
+        updateUserProfileCmd.id = newUserResult.entity.id;
         const updateProfileResult = await commandProcessor.process(updateUserProfileCmd);
-        // assert repository has updated entity from updateUserProfileCmd command 
         assert.equal(true, updateProfileResult.ok);
-        //console.dir(updateProfileResult);
+        // assert command state changes
         const repoUserGavin = repository.getById(updateUserProfileCmd.id, updateUserProfileCmd.type);
         assert.equal('gavin', repoUserGavin.name);
         assert.equal('gavin@gmail.com', repoUserGavin.email);
 
+
+        ///// STEP 3: Delete user ////////////////////////////////////////
+        deleteUserCmd.id = newUserResult.entity.id;
         const deleteUserResult = await commandProcessor.process(deleteUserCmd);
-        // assert repository has deleted entity from deleteUserCmd command 
         assert.equal(true, deleteUserResult.ok);
-        //console.dir(deleteUserResult);
+        // assert command state changes
         const deletedUser = repository.getById(deleteUserCmd.id, deleteUserCmd.type);
         assert.equal(undefined, deletedUser);
 
     });
 
-    it('test custom repo and handler cmd-ctrl implementation', async function () {
+    it('custom repo and handler cmd-ctrl implementation', async function () {
 
                     cmdCtrl.setRepository(customInMemRepo);
                     cmdCtrl.setHandlerFactory(customInMemCommandHandlerFactory);
@@ -74,31 +79,16 @@ describe('test command processor', function () {
         
                     const newUserResult = await commandProcessor.process(newUserCmd);
                     // assert repository has  entity from newUserCmd command 
+                    console.dir(newUserResult);
                     assert.equal(true, newUserResult.ok);
                     //console.dir(newUserResult);
-                    const repoUserGawain = customInMemRepo.getById(newUserCmd.data.id, newUserCmd.type);
+                    const repoUserGawain = customInMemRepo.getById(newUserResult.entity.id, newUserCmd.type);
                     assert.equal('gawain', repoUserGawain.name);
                     assert.equal('gawain@gmail.com', repoUserGawain.email);
-        
-                    const updateProfileResult = await commandProcessor.process(updateUserProfileCmd);
-                    // assert repository has updated entity from updateUserProfileCmd command 
-                    assert.equal(true, updateProfileResult.ok);
-                    //console.dir(updateProfileResult);
-                    const repoUserGavin = customInMemRepo.getById(updateUserProfileCmd.id, updateUserProfileCmd.type);
-                    assert.equal('gavin', repoUserGavin.name);
-                    assert.equal('gavin@gmail.com', repoUserGavin.email);
-        
-                    const deleteUserResult = await commandProcessor.process(deleteUserCmd);
-                    // assert repository has deleted entity from deleteUserCmd command 
-                    assert.equal(true, deleteUserResult.ok);
-                    //console.dir(deleteUserResult);
-                    const deletedUser = customInMemRepo.getById(deleteUserCmd.id, deleteUserCmd.type);
-                    assert.equal(undefined, deletedUser);
                     
     });
 
 });
-
 
 
 
@@ -122,7 +112,10 @@ function testCommandHandlers() {
             newUser.email = command.data.email;
             newUser.type = command.type;
             return newUser;
-        }
+        },
+        validateCommand: function() {},
+        preValidateEntity: function() {},
+        postValidateEntity: function() {}
     }
 
     const updateUserProfileCommand = {
@@ -130,13 +123,19 @@ function testCommandHandlers() {
             entity.name =  command.data.name;
             entity.email = command.data.email;
             return entity;
-        }
+        },
+        validateCommand: function() {},
+        preValidateEntity: function() {},
+        postValidateEntity: function() {}
     }
 
     const deleteUserCommand = {
         execute: function(command, entity) {
             return ;
-        }
+        },
+        validateCommand: function() {},
+        preValidateEntity: function() {},
+        postValidateEntity: function() {}
     }
 
     // Link up commands to command haldners for in mem implementation:

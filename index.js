@@ -1,3 +1,5 @@
+require('sexylog');
+
 /**
  * This index file contains the function used when published to npm
  * 
@@ -5,6 +7,7 @@
 
  const InMemRepository = require('./lib/InMemRepository.js');
  const DirCommandHandlerFactory = require('./lib/DirCommandHandlerFactory.js');
+ const DirCommandHandlerClassFactory = require('./lib/DirCommandHandlerClassFactory.js');
  const CmdCtrl = require('./lib/CommandProcessor.js');
 
  var repository = new InMemRepository();
@@ -32,8 +35,8 @@ exports.init = function(path) {
         } else {
             throw new Error('either supply init(path) for comamnd handler dir or supply customer comamnd handler factory');
         }
-        
     }
+    logger.silly('cmd+ctrl running...');
     return new CmdCtrl(repository, commandHandlerFactory);
 }
 

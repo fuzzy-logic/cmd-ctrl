@@ -1,4 +1,5 @@
 const CommandProcessor = require('../lib/CommandProcessor.js');
+const InMemRepository = require('../lib/InMemRepository');
 const assert = require('assert');
 
 
@@ -8,8 +9,7 @@ const assert = require('assert');
  */
 describe('test command processor', function () {
 
-    const repository = require('../index.js').getInMemRepository(); // get the dev/test in mem repository implementation from cmdCtrl
-
+    const repository = new  InMemRepository();
     const userBob = {id: 1, type: 'user', name: 'bob', email: 'bob@gmail.com'};
     const userJim = {id: 2, type: 'user', name: 'jim', email: 'jim@gmail.com'};
     const userEve = {id: 3, type: 'user', name: 'eve', email: 'eve@gmail.com'};

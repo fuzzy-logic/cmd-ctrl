@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const PORT = process.env.PORT || 3000;
 
 var commandProcessor = cmdCtrl.init(__dirname + '/commands');
-var repository = cmdCtrl.getInMemRepository();
+var repository = commandProcessor.getRepository();
 
 /**
  * TEST via command line:

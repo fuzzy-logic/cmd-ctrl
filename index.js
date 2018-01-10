@@ -7,37 +7,37 @@ require('sexylog');
 
  const InMemRepository = require('./lib/InMemRepository.js');
  const DirCommandHandlerFactory = require('./lib/DirCommandHandlerFactory.js');
- const DirCommandHandlerClassFactory = require('./lib/DirCommandHandlerClassFactory.js');
+ const InMemCommandHandlerFactory = require('./lib/InMemCommandHandlerFactory.js');
  const CmdCtrl = require('./lib/CommandProcessor.js');
 
- var repository = new InMemRepository();
- var commandHandlerFactory;
 
-exports.setRepository = function(newRepo) {
-    //console.log("CMD+CTRL adding custom user defined repoitory");
-    repository = newRepo;
+exports.init = function(config, repo) {
 
-}
+    logger.debug('cmd+ctrl config type=' + typeof config);
 
-exports.setHandlerFactory = function(factory) {
-    //console.log("CMD+CTRL adding custom user defined commandHandlerFactory");
-    commandHandlerFactory = factory;
-}
+    if (config instanceof Array) {
+        logger.info("cm+ctrl init() config=Array");
+        const commandHandlers = config;
+        commandHandlerFactory = new InMemCommandHandlerFactory(commandHandlers);
 
-exports.getInMemRepository = function() {
-    return repository;
-}
+    } else if (typeof config === 'string') {
+        logger.info("cm+ctrl init() config=Array");
+        const path = config;
+        commandHandlerFactory = new DirCommandHandlerFactory(path);
+        
+    }  else if (typeof config === 'object') {
+        logger.info("cm+ctrl init() config=object");
+        const factory = config;
+        commandHandlerFactory = factory;
 
-exports.init = function(path) {
-    if (! commandHandlerFactory) {
-        if (path) {
-            commandHandlerFactory = new DirCommandHandlerFactory(path);
-        } else {
-            throw new Error('either supply init(path) for comamnd handler dir or supply customer comamnd handler factory');
-        }
+    } else {
+        const msg = "cm+ctrl init() unable to auto detect config type " + typeof config + ". No command factory config specified, this is bad."
+        logger.error(msg);
+        throw new Error(msg);
     }
-    logger.silly('cmd+ctrl running...');
-    return new CmdCtrl(repository, commandHandlerFactory);
+
+    if (! repo) repo = new InMemRepository();
+    return new CmdCtrl(repo, commandHandlerFactory);
 }
 
 

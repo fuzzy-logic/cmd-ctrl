@@ -16,16 +16,6 @@ const userEve = {id: 3, type: 'user', name: 'eve', email: 'eve@gmail.com'};
  * 
  */
 describe('test command processor', function () {
-
-    const customInMemRepo = customInMemRepository();
-    const customInMemCommandHandlerFactory = inMemCommandHandlerFactory(testCommandHandlers());
-
-    before(function() {
-        // runs before all tests in this block
-        customInMemRepo.save(userBob);
-        customInMemRepo.save(userJim);
-        customInMemRepo.save(userEve);
-    });
         
     /**
      * execute series of commands representing typical lifecycle of an entity:
@@ -34,10 +24,11 @@ describe('test command processor', function () {
      * 3.) delete user
      *  
      */
-    it('user lifecycle with default in-mem+dir cmd-ctrl implementation', async function () {
+    it('default in-mem dir handler cmd-ctrl implementation', async function () {
 
+        //const cmdCtrl = require('../index.js');
         var commandProcessor = cmdCtrl.init(__dirname + '/commands');
-        var repository = cmdCtrl.getInMemRepository();
+        var repository = commandProcessor.getRepository();
     
 
         ///// STEP 1: Create new user ///////////////////////////////////////
@@ -69,24 +60,65 @@ describe('test command processor', function () {
 
     });
 
-    it('custom repo and handler cmd-ctrl implementation', async function () {
 
-                    cmdCtrl.setRepository(customInMemRepo);
-                    cmdCtrl.setHandlerFactory(customInMemCommandHandlerFactory);
 
-                    var commandProcessor = cmdCtrl.init();
-                    assert.ok(commandProcessor);
+    it('default in mem handler cmd-ctrl implementation', async function () {
+
+        const commandHandler = {
+            name: 'CreateUser',
+            execute: function(command, entity) {
+                // entity will be undefined
+                const newUser = {};
+                newUser.id = 101;
+                newUser.name =  command.data.name;
+                newUser.email = command.data.email;
+                newUser.type = command.type;
+                return newUser;
+            },
+            validateCommand: function() {},
+            preValidateEntity: function() {},
+            postValidateEntity: function() {}
+        }
         
-                    const newUserResult = await commandProcessor.process(newUserCmd);
-                    // assert repository has  entity from newUserCmd command 
-                    console.dir(newUserResult);
-                    assert.equal(true, newUserResult.ok);
-                    //console.dir(newUserResult);
-                    const repoUserGawain = customInMemRepo.getById(newUserResult.entity.id, newUserCmd.type);
-                    assert.equal('gawain', repoUserGawain.name);
-                    assert.equal('gawain@gmail.com', repoUserGawain.email);
-                    
+ 
+        var commandProcessor = cmdCtrl.init([commandHandler]);
+        var repository = commandProcessor.getRepository();
+        assert.ok(commandProcessor);
+
+        const newUserResult = await commandProcessor.process(newUserCmd);
+        // assert repository has  entity from newUserCmd command 
+        console.dir(newUserResult);
+        assert.equal(true, newUserResult.ok);
+        //console.dir(newUserResult);
+        const repoUserGawain = repository.getById(101, newUserCmd.type);
+        assert.equal('gawain', repoUserGawain.name);
+        assert.equal('gawain@gmail.com', repoUserGawain.email);
+                            
     });
+
+
+
+    it('custom repo and handler cmd-ctrl implementation', async function () {
+        
+                const customInMemRepo = customInMemRepository();
+                const customInMemCommandHandlerFactory = inMemCommandHandlerFactory(testCommandHandlers());
+                customInMemRepo.save(userBob);
+                customInMemRepo.save(userJim);
+                customInMemRepo.save(userEve);
+        
+                var commandProcessor = cmdCtrl.init(customInMemCommandHandlerFactory, customInMemRepo);
+                assert.ok(commandProcessor);
+        
+                const newUserResult = await commandProcessor.process(newUserCmd);
+                // assert repository has  entity from newUserCmd command 
+                console.dir(newUserResult);
+                assert.equal(true, newUserResult.ok);
+                //console.dir(newUserResult);
+                const repoUserGawain = customInMemRepo.getById(newUserResult.entity.id, newUserCmd.type);
+                assert.equal('gawain', repoUserGawain.name);
+                assert.equal('gawain@gmail.com', repoUserGawain.email);
+                            
+            });
 
 });
 
